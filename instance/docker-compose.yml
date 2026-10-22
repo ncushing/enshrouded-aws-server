@@ -1,0 +1,15 @@
+services:
+  enshrouded:
+    # Pin to a version tag once you have a known-good one (e.g. 1.x.x-wine).
+    image: mornedhels/enshrouded-server:latest
+    container_name: enshrouded
+    hostname: enshrouded
+    restart: unless-stopped
+    stop_grace_period: 90s
+    ports:
+      - "15637:15637/udp"
+    volumes:
+      - /mnt/data/game:/opt/enshrouded
+    env_file:
+      - /opt/enshrouded-ctl/server.env
+      - /opt/enshrouded-ctl/secrets.env

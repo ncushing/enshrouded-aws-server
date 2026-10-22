@@ -1,0 +1,15 @@
+[Unit]
+Description=Enshrouded idle watcher (stops the instance when nobody is playing)
+After=enshrouded.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/enshrouded/boot.env
+EnvironmentFile=/opt/enshrouded-ctl/idle.env
+ExecStart=/usr/bin/python3 /opt/enshrouded-ctl/idle_watcher.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

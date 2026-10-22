@@ -1,0 +1,15 @@
+region      = "us-east-1"
+budget_email = "you@example.com"
+
+server_name = "Our Enshrouded Server"
+slot_count  = 8
+
+# Discord (IDs are not secret; enable Developer Mode in Discord to copy them)
+discord_public_key      = "PASTE_APPLICATION_PUBLIC_KEY_HEX"
+discord_guild_id        = "000000000000000000"
+discord_channel_id      = "000000000000000000"
+discord_player_role_ids = ["000000000000000000"] # may start/status
+discord_admin_role_ids  = ["000000000000000000"] # may also stop
+
+# Optional hardening once bootstrap/ has been applied by an admin
+# permissions_boundary_arn = "arn:aws:iam::123456789012:policy/enshrouded-boundary"

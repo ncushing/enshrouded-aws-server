@@ -1,0 +1,49 @@
+#!/bin/bash
+# First-boot installer. Everything that changes later lives in S3 (instance/)
+# and is pulled on every boot by /usr/local/bin/enshrouded-sync.sh.
+set -euxo pipefail
+exec > >(tee -a /var/log/enshrouded-bootstrap.log) 2>&1
+
+# The instance launches without a public IP; Terraform attaches the Elastic IP
+# a few seconds later. Wait for outbound connectivity before touching apt.
+for i in $(seq 1 60); do
+  curl -sfI --max-time 5 https://archive.ubuntu.com >/dev/null && break
+  sleep 5
+done
+
+export DEBIAN_FRONTEND=noninteractive
+apt-get update
+apt-get install -y docker.io docker-compose-v2 python3 rsync unzip curl jq
+snap install aws-cli --classic
+systemctl enable --now docker
+
+mkdir -p /etc/enshrouded /opt/enshrouded-ctl /mnt/data
+cat > /etc/enshrouded/boot.env <<'EOT'
+BUCKET=${bucket}
+REGION=${region}
+PARAM_PREFIX=${param_prefix}
+EOT
+
+# --- persistent data volume (attached by Terraform after the instance exists)
+DEV=/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_${volume_id_nodash}
+for i in $(seq 1 60); do
+  [ -e "$DEV" ] && break
+  sleep 5
+done
+[ -e "$DEV" ] || { echo "data volume never appeared"; exit 1; }
+if ! blkid "$DEV" >/dev/null 2>&1; then
+  mkfs.ext4 -L enshdata "$DEV"
+fi
+grep -q 'LABEL=enshdata' /etc/fstab || echo 'LABEL=enshdata /mnt/data ext4 defaults,nofail 0 2' >> /etc/fstab
+mount -a
+mkdir -p /mnt/data/game
+chown 4711:4711 /mnt/data/game
+
+# --- pull scripts/units from S3, then install and start them
+. /etc/enshrouded/boot.env
+aws s3 cp "s3://$BUCKET/instance/enshrouded-sync.sh" /usr/local/bin/enshrouded-sync.sh --region "$REGION"
+chmod 0755 /usr/local/bin/enshrouded-sync.sh
+/usr/local/bin/enshrouded-sync.sh
+
+systemctl enable enshrouded.service enshrouded-idle.service
+systemctl start enshrouded.service enshrouded-idle.service

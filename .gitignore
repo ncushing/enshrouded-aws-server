@@ -1,0 +1,23 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+terraform.tfvars
+.terraform.tfstate.lock.info
+
+# Secrets / local env
+.env
+.env.*
+!.env.example
+*.pem
+
+# Build output
+lambda/*.zip
+node_modules/
+.DS_Store
+.build/
+_to_delete/
+*.rendered.json
+CLAUDE.local.md
